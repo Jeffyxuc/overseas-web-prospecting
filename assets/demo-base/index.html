@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="An independent website design concept. Demonstration only.">
+  <title>Independent website concept</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="concept">Independent design concept · Nothing on this page places a real order or booking</div>
+  <header class="nav wrap">
+    <a href="#" class="wordmark" id="brand"></a>
+    <nav aria-label="Main navigation"><a href="#collection" id="collection-link">Explore</a><a href="#visit">Visit us</a><a class="pill small" href="#experience">Try the demo <span aria-hidden="true">↗</span></a></nav>
+  </header>
+  <main id="main">
+    <section class="hero wrap">
+      <div class="hero-copy"><p class="eyebrow" id="eyebrow">A little more considered</p><h1 id="tagline"></h1><p class="intro" id="intro"></p><a class="pill" href="#collection">Find your favourite <span aria-hidden="true">↗</span></a><p class="quiet" id="hero-note">Explore a simpler way to plan your next visit.</p></div>
+      <div class="art" role="img" aria-label="Abstract decorative illustration, not a product photograph"><div class="orb orb-one"></div><div class="orb orb-two"></div><div class="orb orb-three"></div><span class="art-caption">Made for the everyday<br>moments that matter.</span><span class="art-label">DESIGN CONCEPT</span></div>
+    </section>
+    <section class="collection wrap" id="collection"><div class="section-heading"><div><p class="eyebrow">Discover the details</p><h2 id="collection-title">Good things, thoughtfully made.</h2></div><p id="collection-note">A focused selection, with a clearer next step.</p></div><div class="cards" id="cards"></div></section>
+    <section class="experience wrap" id="experience"><div class="experience-heading"><p class="eyebrow">See how it could work</p><h2 id="flow-title">Make it yours.</h2><p id="flow-description"></p><p class="demo-note">Interactive simulation. No personal details are required. Availability and options are illustrative.</p></div>
+      <form id="demo-form"><label id="choice-label" for="choice">Choose an option</label><select id="choice" required><option value="">Select an option</option></select>
+      <div class="form-grid"><div><label for="date">Preferred date</label><input type="date" id="date" required></div><div><label for="detail" id="detail-label">Preferred time</label><select id="detail" required></select></div></div>
+      <button class="pill" type="submit">Preview request <span aria-hidden="true">→</span></button><div class="summary" id="summary" role="status" aria-live="polite" hidden></div></form>
+    </section>
+    <section id="visit" class="visit wrap"><p class="eyebrow">The next step</p><h2>We’d love to welcome you.</h2><p id="address"></p><p class="quiet">For actual services, use the business’s existing official contact channel.</p></section>
+  </main>
+  <footer class="wrap"><span id="footer-brand"></span><span>Independent proposal · Demonstration only</span></footer>
+</body>
+</html>

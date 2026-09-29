@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "origin": "User-approved Bakers Dozen outreach structure, 2026-09-28; identifying information removed.",
+  "introduction": "I hope you don’t mind me reaching out. I’m {name} from {company}, {company_description} based in {location}.",
+  "access": "You can open the demo on your phone or computer, with no login or installation required.",
+  "invitation": "Could you see something like this being useful for your business? I’d love to hear what you think. If you’re interested in developing it into a fully functioning website, we’d be happy to help with the development, setup, and launch. Just reply to this email whenever you’d like to discuss it.",
+  "paragraph_order": ["greeting", "introduction", "observation", "demo_intro", "business_value", "additional_value", "demo_link_and_image", "access", "disclosure", "invitation", "signature"],
+  "personalization": {
+    "observation": "How the business was found and a specific sourced observation; avoid unsupported praise or conversion claims.",
+    "demo_intro": "What the completed demo actually contains; mention an original logo only if used.",
+    "business_value": "The actual demonstrated journey and its intended benefit, not a promised business result.",
+    "additional_value": "Optional second benefit supported by the demo; omit when repetitive.",
+    "disclosure": "State independent concept and actual simulation limits. Mention AI imagery only when present."
+  }
+}

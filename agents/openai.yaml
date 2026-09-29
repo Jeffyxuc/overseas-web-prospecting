@@ -1,0 +1,4 @@
+interface:
+  display_name: "海外建站获客助手"
+  short_description: "在 Codex 中筛选海外商家、分析官网、搭建演示网站并生成个性化邮件包"
+  default_prompt: "请使用 $overseas-web-prospecting，带我完成从寻找海外建站客户到生成 Demo 和开发邮件的流程。"
