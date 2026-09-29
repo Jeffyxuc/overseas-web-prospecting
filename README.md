@@ -13,7 +13,42 @@
 任务资料保存在用户自己的目录，支持中断后继续。用户选择和方案批准是明确的决策节点。
 本项目不提供公共后台服务，不自动发送邮件。
 
-## 一键安装：Mac / Windows
+## 安装并检查环境：推荐新用户使用
+
+命令会显示依赖检查、安装和抓取验证的进度。需要能访问 GitHub、软件源、Docker Hub 和 Google Maps。
+先安装并登录 Codex。以下命令会安装缺失的软件，备份已有同名 Skill 后安装两个 Skill；首次运行可能下载较多内容。
+
+**Windows：在普通 PowerShell 中粘贴这一行。**
+
+```powershell
+$p = Join-Path $env:TEMP 'overseas-web-setup.ps1'; Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/Jeffyxuc/overseas-web-prospecting/main/scripts/setup.ps1' -OutFile $p; if ($?) { powershell.exe -NoProfile -ExecutionPolicy Bypass -File $p }
+```
+
+只对这次安装进程使用执行策略参数，不永久修改系统策略。通过 Windows 自带的 winget 安装缺失的 Python、Git、Node.js、Docker Desktop。
+缺少 winget 时提示安装 [App Installer](https://aka.ms/getwinget)。缺少 WSL/Ubuntu 时，会显示管理员应执行的 `wsl --install -d Ubuntu`；
+完成首次设置、必要的重启后，回到普通 PowerShell 重跑同一条命令。已有 Ubuntu-24.04 等发行版时，可在末尾追加 `-Distro Ubuntu-24.04`。
+脚本在指定 WSL 中补充 Bash、Node、npm、Python、curl 和 Git，随后检查该环境能否连接 Linux Docker 引擎。
+
+**Mac：在终端中粘贴这一行。**
+
+```bash
+p=$(mktemp -t overseas-web-setup) && curl -fLSs https://raw.githubusercontent.com/Jeffyxuc/overseas-web-prospecting/main/scripts/setup.sh -o "$p" && /bin/bash "$p"
+```
+
+缺少 Homebrew 时调用其官方安装器；按需安装 Python、Git、Node.js 和 Docker Desktop。
+系统密码、开发工具下载、Docker 首次提示需要用户按屏幕指引完成。
+
+**显示 `READY` 才表示真实抓取验证通过。** 最后会进行一次悉尼烘焙店的小规模查询，只有容器正常结束，
+且结果中至少一个商家带有地图链接、评分和评论数，才报告抓取可用。这不等于完成评价正文分析。
+系统授权、重启或 Docker 的 WSL 集成设置无法保证一次全自动完成；遇到这些情况，脚本给出下一步，重跑后重新检查并继续。
+Windows 的 Docker 集成入口见 [Docker 官方指引](https://docs.docker.com/desktop/features/wsl/)，WSL 安装见 [微软指引](https://learn.microsoft.com/en-us/windows/wsl/install)。
+
+现有 Skill 备份、环境报告和测试结果保留在 Windows `%LOCALAPPDATA%/overseas-web-prospecting/setup`，
+或 Mac `~/Library/Caches/overseas-web-prospecting/setup`。验证不会发送邮件或发布网站。
+只想检查环境，可在 Windows 命令末尾加 `-CheckOnly`，Mac 命令末尾加 `--check-only`；这种模式不测试抓取。
+自定义 CODEX_HOME、手动验证和失败恢复见 [安装与环境](references/setup.md)。
+
+## 仅安装 Skill：Mac / Windows
 
 先安装 **Node.js 22.20.0 或更高版本（含 npm/npx）**、**Git**，并确保可以使用 Codex。
 Mac 的终端和 Windows 的命令提示符（CMD）使用同一条命令：
@@ -68,7 +103,7 @@ Mac / Windows 使用相同的 Skill 文件；本次已实测 Windows 项目级�
 | `references/` | 筛选、分析、搭建、邮件、恢复及数据契约 |
 | `scripts/` | 环境检查、进度管理、截图、邮件打包与安装 |
 | `assets/` | 邮件母版与产品预订/服务预约/询价三类网站起点 |
-| `package-manifest.json` | 1.0.0 发行包原始文件摘要 |
+| `package-manifest.json` | 1.0.1 Skill 文件摘要 |
 
 不把客户资料、发件人资料、代理配置或本地任务成果提交到此仓库。
 
@@ -76,9 +111,10 @@ Mac / Windows 使用相同的 Skill 文件；本次已实测 Windows 项目级�
 
 ```sh
 python scripts/test_workflow.py
+python scripts/test_environment.py
 ```
 
-19 项本地行为测试通过。三类模板在电脑与两种手机视口的 9 组浏览器场景通过。
+核心流程原有 19 项本地行为测试、三类模板 9 组浏览器场景已验证；新增环境检查器有独立的离线行为测试。
 真实 Google Maps 抓取、公共部署、邮箱发送和全新用户配置未在本版完成验证。
 示例测试使用明确的虚构数据，不能作为真实客户研究结果。详见 [验证说明](验证说明.md)。
 

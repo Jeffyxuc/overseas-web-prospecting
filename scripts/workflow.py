@@ -19,7 +19,7 @@ from email.message import EmailMessage
 from email.policy import SMTP
 from urllib.parse import urlparse, urlunparse
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 SKILL = Path(__file__).resolve().parent.parent
 
 

@@ -5,7 +5,7 @@ description: >-
   引导用户选择一家并分析官网，确认方案后搭建网站 Demo，按照标准母版生成带真实截图的个性化开发邮件包。
   用于海外建站获客、为商家制作改版提案与开发信，以及继续已有获客任务。只需要地图数据时使用 google-maps-scraper。
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
   runtime: "Codex desktop; Python 3.10+; Google Maps Scraper dependency; browser tools"
 ---
 

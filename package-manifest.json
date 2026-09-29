@@ -1,6 +1,8 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "files": {
+    "README.md": "949ecbd8614ba19f77b285df75f78018dbfc2f4df4d3c6a686be1f033555cc4d",
+    "SKILL.md": "f1297cc236debe4cf5e04e2a704e8dc481a38d6cc85bd27302e82dc038378915",
     "agents/openai.yaml": "0a491495ddbd5576f4593bfd71427b837621630ba31463e6e668cd94d985ebef",
     "assets/demo-base/app.js": "74c02065f329215f419062f2306f47b983a2bb9d772591815974f5509eab8475",
     "assets/demo-base/index.html": "4ee8262fb4f376ec8a50a38fef320178ed1104eb9a85fda713611ceb8aa241e6",
@@ -12,14 +14,17 @@
     "references/discovery.md": "8526a28d9747620f4bda14d57f6b9a5dcf511ab9785bb8e0a34559129ccec831",
     "references/email.md": "0a0742476f5316137a6d3a31ebb88ee4dd11d4868f390a4067644bfa7283be64",
     "references/recovery.md": "effa2012d4c42b1d24fb19c1ef630d4a62dcfb036d31986779af709c4821b187",
-    "references/setup.md": "ea99ea42bdaff6ac986831e2fe70b33651d36fe2d50c6832d1927895fe6cd10e",
+    "references/setup.md": "d4901f986386f0a2f5f7e3b6de2d7d0363c01165bb45808e6953126044692b33",
     "scripts/capture.mjs": "b79e8a074fc1c4eb08cab570c2f1e593031e334d653a5e4292b821c77a10ed47",
+    "scripts/check_environment.py": "3b8a8579ba69f266a06b450b970a6fda3535ddaa6b6d87c7fc1f7fa4d03d16f3",
     "scripts/install.py": "1d5a7e343589ab9ad5a90d7e30d69e823d968c4a3c3bce8e6924b784dd6a8b9b",
+    "scripts/setup.ps1": "64b70145ae0b93d05f5a75adf8018b39f90b82708be64ba18a7c024aaeb41d47",
+    "scripts/setup.sh": "56d318cd08ba5b276a14d94658a43f227cc66f4f194fc80ff8adf0a30657344f",
+    "scripts/test_environment.py": "1a803089517734ec3ef7ac370c9a0548150b1c300cd34df5d0da82fb4949ddfc",
     "scripts/test_workflow.py": "0622737bc9ecd4896a8cecabbf98723605550cbfa690425da9169e36f26dde9d",
-    "scripts/workflow.py": "b2fee17158287816118fb9ca2222007b8b8d7bc22964fd76381284d44fd49763",
-    "SKILL.md": "bf8ddf1d11896aa981225f7606ba4e7bec8e72eea66fe69fd0e089ef19250b68",
-    "使用说明.md": "3c995ada727ac3c4f63626cc7efa8bc957acd76c9c28227284a8f83bd5db52f7",
-    "验证说明.md": "00cc629fbb9bc329d03a3d4fd575c34352d8eb2fc105d4ccdf2944cc596fc630"
+    "scripts/workflow.py": "baadd0c3099b820897999d1704df14ef890346237ae5ac876e7c44127ec24b21",
+    "使用说明.md": "fda7e5597a2ed8c2499adbcf64ba0dee1328095f84cc604940783e2297d540c5",
+    "验证说明.md": "d533a519250834fb315844828db1c1b216d61c7ff2898544ef69b8eec39dab79"
   },
   "note": "No user profiles or client records included. Upstream scraper is a separately installed dependency."
 }
