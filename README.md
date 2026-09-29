@@ -13,21 +13,41 @@
 任务资料保存在用户自己的目录，支持中断后继续。用户选择和方案批准是明确的决策节点。
 本项目不提供公共后台服务，不自动发送邮件。
 
-## 安装与开始
+## 一键安装：Mac / Windows
 
-将整个仓库目录作为 `overseas-web-prospecting` Skill 安装到 Codex 的技能目录。
-也可在仓库目录运行：
+先安装 **Node.js 22.20.0 或更高版本（含 npm/npx）**、**Git**，并确保可以使用 Codex。
+Mac 的终端和 Windows 的命令提示符（CMD）使用同一条命令：
 
 ```sh
-python scripts/install.py
+npx -y skills@1.7.0 add Jeffyxuc/overseas-web-prospecting -a codex -g --copy -y
 ```
 
-安装程序保留已有同名技能，不覆盖。它不会安装 Docker 等系统依赖。
-重新加载 Codex 技能后输入：
+Windows PowerShell 如果提示禁止运行 `npx.ps1`，使用下面这条等效命令，无需修改系统执行策略：
+
+```powershell
+npx.cmd -y skills@1.7.0 add Jeffyxuc/overseas-web-prospecting -a codex -g --copy -y
+```
+
+命令固定安装工具版本，自动下载本仓库的 Skill，安装到 Codex 用户级目录。
+`--copy` 使用文件复制，避免 Windows 创建符号链接的权限要求；`-y` 跳过安装选择提示。
+这里使用 [Vercel Skills CLI](https://github.com/vercel-labs/skills#install-a-skill) 的标准安装流程，
+工具版本固定为 1.7.0，技能内容从本仓库当前默认分支获取。
+重复运行可能更新或覆盖同名安装副本；有自行修改时请先保留副本。
+
+**这条命令安装的是获客 Skill，不会自动安装 Docker、Python、WSL 等系统运行环境，也不会替你登录服务。**
+Google Maps Scraper 是独立依赖，首次使用时由本 Skill 检查并引导安装、配置。
+Mac / Windows 使用相同的 Skill 文件；本次已实测 Windows 项目级隔离安装，Mac 未在实机上验证。
+
+## 安装后开始
+
+重新加载 Codex 技能或新开聊天，输入：
 
 > 使用 $overseas-web-prospecting，帮我寻找英国曼彻斯特适合提供建站服务的烘焙店。
 
-完整步骤见 [使用说明](使用说明.md)，执行规则见 [SKILL.md](SKILL.md)。
+也可以只说“使用海外建站获客助手”，让 Codex 引导你填写区域与行业。
+完整使用步骤见 [使用说明](使用说明.md)，执行规则见 [SKILL.md](SKILL.md)。
+
+不使用 npx 时，可下载仓库后使用包内 `scripts/install.py` 安装；该备用安装器拒绝覆盖已有同名目录。
 
 ## 环境依赖
 
