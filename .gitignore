@@ -19,3 +19,12 @@ Thumbs.db
 sender-profile.json
 proxies.txt
 *.log
+
+/secrets/
+runtime.json
+installation.json
+environment-report.json
+download.env
+proxy-check.conf
+daemon-proxy.json
+/backup-*/

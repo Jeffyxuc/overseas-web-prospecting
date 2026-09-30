@@ -78,7 +78,7 @@ class EnvironmentTests(unittest.TestCase):
 
     def test_timeout_keeps_container_and_does_not_claim_success(self):
         runtime = FakeRuntime()
-        responses = iter([(1, '', ''), (0, '', ''), (0, 'id', ''), (0, 'unique-container-id', '')])
+        responses = iter([(0, 'pulled', ''), (1, '', ''), (0, '', ''), (0, 'unique-container-id', '')])
         def command(*args, **kwargs):
             runtime.calls.append(args)
             return next(responses)

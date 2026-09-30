@@ -2,10 +2,12 @@
 """Check one coherent runtime; optionally run a bounded, real upstream crawl."""
 from __future__ import annotations
 import argparse
+from contextlib import contextmanager, nullcontext
 import csv
 from datetime import datetime, timezone
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -34,6 +36,34 @@ class Runtime:
         if distro == 'docker-desktop':
             raise SetupError('Select a user WSL distribution, not docker-desktop.')
         self.distro = distro
+        self.settings = {}
+
+    @contextmanager
+    def session(self):
+        """An open stdin keeps a WSL client alive, including between Docker polls."""
+        holder = None
+        if self.distro:
+            holder = subprocess.Popen(['wsl.exe','-d',self.distro,'--exec','sh','-c','read -r keepalive'],
+                                      stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        try:
+            yield self
+        finally:
+            if holder:
+                try:
+                    holder.stdin.close()
+                    holder.wait(timeout=5)
+                except (OSError, subprocess.TimeoutExpired):
+                    holder.terminate()
+                    holder.wait(timeout=5)
+
+    def prepare(self, settings):
+        self.settings = settings
+        if not self.distro:
+            os.environ['PATH'] = os.pathsep.join(settings.get('native_path_prefix',[])+[os.environ.get('PATH','')])
+        if self.distro and settings.get('engine') == 'wsl':
+            code, _, _ = run(['wsl.exe','-d',self.distro,'-u','root','--exec','systemctl','start','docker'],60)
+            if code:
+                raise SetupError('Could not start the WSL Docker service. Rerun environment setup.')
 
     def command(self, *args, timeout=30):
         prefix = ['wsl.exe', '-d', self.distro, '--exec'] if self.distro else []
@@ -72,62 +102,31 @@ def validate_results(path):
 
 
 def crawl(runtime, skills, report_dir, timeout=600, poll_seconds=5):
-    container = 'gmaps-scraper-agent'  # Contract of the currently supported upstream helper.
-    code, output, _ = runtime.command('docker', 'inspect', '--format', '{{.State.Status}}', container)
-    if code == 0 and output in ('running', 'restarting', 'paused', 'created'):
-        raise SetupError('An existing scraper container may belong to another task. Finish that task before validation.')
-    crawl_dir = report_dir / ('smoke-' + uuid.uuid4().hex)
-    crawl_dir.mkdir()
-    query = crawl_dir / 'queries.txt'
-    query.write_text('bakeries in Sydney Australia\n', encoding='utf-8')
-    result_dir = crawl_dir / 'results'
-    result_dir.mkdir()
-    print('[TEST] Downloading the scraper image if needed; first use can take several minutes.', flush=True)
+    from run_maps import execute
+    settings = getattr(runtime, 'settings', {})
+    print('[TEST] Checking/downloading the scraper image.', flush=True)
     code, _, _ = runtime.command('docker', 'pull', 'gosom/google-maps-scraper', timeout=600)
     if code:
-        raise SetupError('Scraper image download failed. Check access to Docker Hub and rerun; no successful crawl is claimed.')
-    helper = skills / 'google-maps-scraper' / 'scripts' / 'run-local.sh'
-    code, _, _ = runtime.command('bash', runtime.path(helper), '--queries', runtime.path(query),
-                               '--output-dir', runtime.path(result_dir), '--depth', '1',
-                               '--skip-image-pull', timeout=60)
-    if code:
-        raise SetupError('The upstream startup helper failed. Inspect Docker and the installed upstream version, then rerun.')
-    # Store the unique ID returned by Docker, so later checks cannot silently follow a replacement container.
-    code, container_id, _ = runtime.command('docker', 'inspect', '--format', '{{.Id}}', container)
-    if code or not container_id:
-        raise SetupError('Could not identify the started validation container.')
-    deadline = time.monotonic() + timeout
-    print('[TEST] Waiting for real Google Maps results (at most 10 minutes after startup).', flush=True)
-    while time.monotonic() < deadline:
-        code, output, _ = runtime.command('docker', 'inspect', '--format', '{{json .State}}', container_id)
-        if code:
-            raise SetupError('Validation container is no longer available.')
-        try:
-            state = json.loads(output)
-        except json.JSONDecodeError as exc:
-            raise SetupError('Docker returned an unreadable container state.') from exc
-        status = state.get('Status')
-        if status == 'exited':
-            if state.get('ExitCode') != 0:
-                raise SetupError('The validation crawl exited with an error; results, if any, are preserved.')
-            return {**validate_results(result_dir / 'results.csv'), 'container_id': container_id,
-                    'results_path': str(result_dir / 'results.csv'), 'query': query.read_text().strip()}
-        if status in ('dead', 'removing'):
-            raise SetupError('The validation container stopped unexpectedly.')
-        print('[WAIT] Crawl is still running; no success recorded yet.', flush=True)
-        time.sleep(poll_seconds)
-    # Do not stop/remove any container automatically, including a validation that has partial results.
-    raise SetupError(f'Validation timed out. Container {container_id[:12]} and partial files at {crawl_dir} are preserved. '
-                     'Check that container before rerunning; environment is not marked ready.')
+        raise SetupError('Image download failed. Configure the Docker daemon proxy separately from the crawl proxy; rerun setup.')
+    crawl_dir = report_dir / ('smoke-' + uuid.uuid4().hex)
+    record = execute(runtime, crawl_dir, 'bakeries in Sydney Australia', settings, timeout=timeout, poll_seconds=poll_seconds)
+    return {**record, **validate_results(Path(record['results_path']))}
 
 
 def check(runtime, skills, report_dir, smoke_test=False):
+    with runtime.session() if hasattr(runtime, 'session') else nullcontext():
+        return _check(runtime, skills, report_dir, smoke_test)
+
+
+def _check(runtime, skills, report_dir, smoke_test=False):
     report = {'checked_at': datetime.now(timezone.utc).isoformat(), 'wsl_distro': runtime.distro,
-              'status': 'checking', 'checks': [], 'crawl': {'status': 'not_run'}}
+              'status': 'checking', 'checks': [], 'crawl': {'status': 'not_run'}, 'runtime_profile_configured': bool(getattr(runtime,'settings',{}))}
     report_dir.mkdir(parents=True, exist_ok=True)
     path = report_dir / 'environment-report.json'
     path.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     try:
+        if hasattr(runtime, 'prepare'):
+            runtime.prepare(getattr(runtime, 'settings', {}))
         for name in ('overseas-web-prospecting', 'google-maps-scraper'):
             if not (skills / name / 'SKILL.md').is_file():
                 raise SetupError(f'Missing skill: {name}. Run the installer first.')
@@ -152,7 +151,7 @@ def check(runtime, skills, report_dir, smoke_test=False):
             raise SetupError('The selected runtime needs Python 3.10 or newer.')
         if smoke_test:
             report['crawl'] = {'status': 'running'}
-            report['crawl'] = {'status': 'passed', **crawl(runtime, skills, report_dir)}
+            report['crawl'] = {**crawl(runtime, skills, report_dir), 'status': 'passed'}
             report['status'] = 'ready'
         else:
             report['status'] = 'dependencies_ok_crawl_unverified'
@@ -176,17 +175,25 @@ def check(runtime, skills, report_dir, smoke_test=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--wsl-distro')
-    parser.add_argument('--skills-dir', type=Path, required=True)
+    parser.add_argument('--skills-dir', type=Path)
+    parser.add_argument('--profile', type=Path)
     parser.add_argument('--report-dir', type=Path, required=True)
     parser.add_argument('--smoke-test', action='store_true', help='Download the image and perform one real public query.')
     args = parser.parse_args()
-    report = check(Runtime(args.wsl_distro), args.skills_dir.resolve(), args.report_dir.resolve(), args.smoke_test)
+    from run_maps import profile_path
+    from install_bundle import default_skills_dir
+    selected = args.profile or profile_path()
+    settings = json.loads(selected.read_text(encoding='utf-8-sig')) if selected.is_file() else {}
+    runtime = Runtime(args.wsl_distro or settings.get('wsl_distro'))
+    runtime.settings = settings
+    skills = args.skills_dir or Path(settings.get('skills_dir', default_skills_dir()))
+    report = check(runtime, skills.resolve(), args.report_dir.resolve(), args.smoke_test)
     return 2 if report['status'] == 'needs_action' else 0
 
 
 if __name__ == '__main__':
     try:
         sys.exit(main())
-    except (SetupError, KeyboardInterrupt) as exc:
-        print('[INCOMPLETE] ' + (str(exc) or 'Interrupted; no successful validation recorded.'), file=sys.stderr)
+    except (SetupError, OSError, ValueError, KeyboardInterrupt) as exc:
+        print('[INCOMPLETE] ' + (str(exc) if isinstance(exc, SetupError) else type(exc).__name__+'. Check local files; no successful validation recorded.'), file=sys.stderr)
         sys.exit(2)

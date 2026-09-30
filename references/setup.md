@@ -1,73 +1,70 @@
-# 安装与环境
+# 安装与环境（1.1.0）
 
-## 带环境检查的安装入口（1.0.1）
+## 默认路径与启动顺序
 
-仓库 README 提供 Windows `scripts/setup.ps1` 与 macOS `scripts/setup.sh` 的下载执行命令。
-这两个入口显示六阶段进度，安装可自动处理的依赖，备份并安装两个 Skill，最后调用
-`scripts/check_environment.py --smoke-test` 验证一次真实抓取。
-Windows 缺少 WSL/Ubuntu 时会给出管理员安装命令，完成首次用户名设置或重启后重新运行即可继续。
-不会把仅有 `docker-desktop` 当作完整 Linux 工作环境，也不会自动修改 Docker Desktop 内部配置。
-Docker 的首次授权和 WSL Integration 需要按终端提示完成。
+新用户使用 README 的 Windows / Mac 完整安装入口。只装 Skill 不等于装好抓取环境。
+安装器读取 CODEX_HOME；未设置时识别已有 `.agents/skills`，否则用 `.codex/skills`。默认安装会把两个目录内旧的同名 Skill 移到备份，最后只保留一套生效副本。自定义 CODEX_HOME 时只操作其中的 skills，不合并其他安装。
 
-这两个便捷入口使用默认 `~/.codex/skills`。自定义 CODEX_HOME 时，保留原安装方式安装两个 Skill，
-准备相应运行环境，再手动执行检查器的 `--skills-dir` 和 `--report-dir` 参数。
+本地状态统一保存在 `$CODEX_HOME/overseas-web-prospecting`，未设置时为 `~/.codex/overseas-web-prospecting`：
 
-报告位置：Windows `%LOCALAPPDATA%/overseas-web-prospecting/setup/environment-report.json`；
-macOS `~/Library/Caches/overseas-web-prospecting/setup/environment-report.json`。
-报告与原始验证结果留在用户电脑，不提交仓库。
-开始获客时读取已有报告，Windows 使用报告内的 `wsl_distro`，显式转换 Skill 和输出路径。
-Mac 若使用 Homebrew 的 node@24，将 `$(brew --prefix node@24)/bin` 加到当前命令的 PATH；不用永久更改用户 shell 配置。
+- installation.json：实际 skills_dir、版本、备份位置。
+- runtime.json：运行发行版、引擎类型、工具路径、代理文件路径；无明文代理 URL。
+- secrets/：本机网络配置，勿输出、上传、加入仓库或复制给其他用户。
+- environment-report.json：最近一次环境检查结论。
+- smoke-*/：安装验收的真实原始数据。
 
-- `ready`：那一次查询已获得至少一个带地图链接、评分和评论数的商家。它不保证以后查询成功，也不表示已提取评价正文。
-- `dependencies_ok_crawl_unverified`：仅检查依赖，未验证抓取，不能宣称地图抓取可用。
-- `needs_action` / `setup_in_progress`：未就绪，先处理报告或终端中指出的问题。
+开始获客先读取 installation.json/runtime.json 和报告，执行 workflow.py doctor。按 runtime.json 使用 `run_maps.py`；不重装已正常工作的环境、不重复索要代理选择。代理来源和作者电脑互不关联。报告不存在时引导执行 README 安装命令。
 
-报告只是一次带时间的检查结果；开始新任务仍要按上游要求做代表查询。
-环境阻塞时，先告知具体缺失项和恢复步骤。官网初筛可作为临时成果，但不要表述为完成了 Google Maps 抓取。
+状态含义：ready 是一次真实查询通过；dependencies_ok_crawl_unverified 只验证依赖；needs_action/setup_in_progress 尚未完成。历史 ready 不是以后每次查询的成功证明。
 
-检查器可单独运行；不加 `--smoke-test` 不下载镜像、不启动爬虫。Windows 示例：
+## Windows
 
-```powershell
-python scripts/check_environment.py --wsl-distro Ubuntu --skills-dir "$env:USERPROFILE/.codex/skills" --report-dir ./work/setup-check --smoke-test
+默认是 WSL 2 Ubuntu 内的独立 Docker Engine（docker.io），支持 systemd。缺少发行版时在管理员 PowerShell 执行 `wsl --install -d Ubuntu`，完成首次账户设置、必要重启后，在普通 PowerShell 重跑 README 命令。缺少 winget 按提示安装 App Installer。
+
+若旧发行版没有 systemd，在其 `/etc/wsl.conf` 的 `[boot]` 节合并 `systemd=true`，保留其他设置。保存其他 Linux 任务后重启该发行版再继续。不得为了安装擅自终止其他聊天的 WSL 任务。
+
+普通 Linux 用户可能需要加入 docker 组，并启动新会话才能生效；安装器会提示。这意味着该账户拥有 root 等效的 Docker 控制能力。已有 Docker Desktop 集成时，可用 `-Engine Desktop` 复用，避免与独立引擎冲突。Desktop 必须自行启动并开启所选发行版的 WSL Integration。
+
+工具需要在 WSL 内可用，不能用 Windows 的 Node/Docker 命令存在来代替。安装器从 ZIP 写入文件，避免 Git 的 autocrlf 把 Bash 变成 CRLF。现有脚本有换行错误时重跑新安装入口，不永久改变全局 Git 配置。
+
+`run_maps.py` 在整个抓取期间保持 WSL 客户端存活，并在后续运行时启动已安装的 Docker 服务。退出 Codex/中断进程后不保证后台持续工作。
+
+## Mac
+
+完整入口准备 Homebrew、Python、Node、Git、Docker Desktop。保存实际 Homebrew Node 路径，后续程序自己补充 PATH，不依赖上一次安装终端的临时环境变量。不更改全局 shell 配置。
+
+需要完成 Docker 首次提示。Mac 主机上的环回代理在容器内映射到 host.docker.internal；不假设 Docker Desktop 开启 host networking。Mac 实机仍待验收，不能写成已验证支持所有 Mac。
+
+## 网络配置
+
+默认 auto：优先复用上次的本地文件，首次读取运行环境 HTTP(S)_PROXY；没有则直连。修改代理时显式传本地文件：Windows `-ProxyFile PATH`，Mac `--proxy-file PATH`。文件只有一条 `http://` 或 `https://` URL，包含端口；有账号密码时自行写入并编码特殊字符，不在聊天输入。
+
+当前 scraper 要求代理带用户名/密码。匿名 HTTP 代理会生成临时兼容字段，先实际验证 Google 连接成功才保存。该字段不是真实代理账户；若代理拒绝，明确失败，不能声称已配置。仅支持此路径的 HTTP(S) 代理；SOCKS-only 环境请使用代理软件的 HTTP 端口。
+
+WSL 环回代理使用 Linux Docker host 网络；需要 WSL 本身能访问该端口，系统网络模式不同可能需要填写从 WSL 可达的地址。不会擅自改系统网络模式或防火墙。
+
+镜像下载与抓取是两层网络。独立 WSL 引擎保存 daemon.json 的原配置备份，合并 proxies；只有没有活动容器时才重启，失败恢复配置。Desktop/Mac 的镜像下载代理在 Docker 设置中配置。
+
+direct 模式只停用抓取代理，不移除系统或 Docker 自有代理，不删除旧私密文件。运行日志可能包含代理，禁止直接输出 docker logs/env/配置内容；诊断只能输出脱敏摘要。
+
+## 手动检查和抓取
+
+由 Codex 把 SKILL_DIR、PROFILE、REPORT、RUN 替换为实际绝对路径，再执行：
+
+```sh
+python "SKILL_DIR/scripts/check_environment.py" --profile "PROFILE" --report-dir "REPORT" --smoke-test
+python "SKILL_DIR/scripts/run_maps.py" --profile "PROFILE" --query "bakeries in Manchester UK" --output-dir "RUN/work/crawl-01"
 ```
 
-真实验证使用一个固定的悉尼烘焙店查询、深度 1、无代理、无额外评论提取。
-镜像下载最多等待 10 分钟，启动后最多观察 10 分钟；失败保留结果，不自动停止或删除容器。
-上游使用固定容器名，检测到已有活动任务时拒绝覆盖。完成既有任务后再验证。
-入口 `-CheckOnly`（Windows）或 `--check-only`（Mac）不安装依赖和 Skill、不启动抓取，仍会下载检查器、保存检查报告。
-WSL 工具包安装面向 Ubuntu/Debian；其他发行版自行准备工具后使用检查器。
+Mac 用实际 Python 3.10+ 解释器。PROFILE 默认为上述 runtime.json，也可省略 --profile。
+检查器不加 --smoke-test 时不下载镜像、不启动抓取，但可启动已有 WSL Docker 服务。
+真实验收查询为悉尼烘焙店，深度1、并发1。镜像下载和抓取各最多等待10分钟。
+每次抓取使用唯一容器名，保存 crawl.json；发现其他活动获客抓取或上游固定容器时拒绝覆盖。超时保留容器和原始文件，按记录检查状态；不要重复启动、自动停止其他任务或删除现场。
+仅容器正常退出且有商家才算抓取完成；验收还需要至少一条评分/评论数/地图链接。
 
-## 安装
+## 浏览器与可选能力
 
-发行包根目录包含 overseas-web-prospecting/。放入 `$CODEX_HOME/skills`；未设置时为用户主目录下 `.codex/skills`。
-也可执行 `python scripts/install.py`，仅安装本 Skill、不覆盖已有目录、不安装系统依赖。
-若 Codex 尚未发现，刷新技能列表、重启或开新聊天。
-首次执行 `python "SKILL_DIR/scripts/workflow.py" doctor`。需要 Python 3.10+；可用 Codex 已提供的实际解释器。
-PATH 找不到不等于没有安装；不读取凭据文件诊断。
+Codex 浏览器能读取目标站和截图即可。缺少浏览器工具时可在 RUN/work/browser-tools 安装 Playwright；先检查已有运行时，避免重复安装。按需执行 `npm install --prefix RUN/work/browser-tools playwright`，再安装对应 Chromium。不得用真实表单测试提交。
+`capture.mjs --module` 接受 Playwright index.mjs 绝对路径；playwright-core 还需 --executable。模板是起点，仍需按方案完成网站和实际浏览器验证。
 
-## 必需能力
-
-- Codex 可正常使用，允许当前项目的执行与文件读写。
-- google-maps-scraper Skill，来源 https://github.com/gosom/google-maps-scraper 。版本从本机入口读取。
-- 上游所需 Docker、Node.js、bash；Windows 现有上游路径为 WSL。检查发行版内工具和 Docker 守护进程，
-  Windows 上有 Node 不等于 WSL 内有 Node。Win 路径和 /mnt/c/... 路径在边界显式转换。
-- 能访问 Google Maps 与当前目标官网的网络。
-- 浏览器读取、交互和截图能力。优先当前 Codex 浏览器，按其技能与文档操作。
-
-缺少抓取技能时说明将安装第三方依赖，使用官方入口 `npx skills add gosom/google-maps-scraper`，按实际提示选择 Codex。
-系统安装、登录、重启和平台审批不能假装由 Skill 自动完成。不索要聊天中的代理密钥，不复制作者凭据。
-
-## 浏览器备用路径
-
-如果没有可用浏览器工具，但能本地执行 Node，可以使用项目 work/browser-tools/ 中的 Playwright。
-先检查已有运行时，避免重复安装。需要时仅在任务目录安装：
-`npm install --prefix RUN/work/browser-tools playwright`，再用对应 CLI 安装 Chromium。
-如实说明可选下载与审批，记录实际安装版本；不改全局 Node 或 Skill 安装目录。
-capture.mjs 的 --module 接受 Playwright index.mjs 绝对路径；playwright-core 还需 --executable 指定实际浏览器。
-命令里的 SKILL_DIR、RUN、PORT 由 Codex 解析为实际值，不原样运行。不硬编码作者路径。
-
-## 可选能力与首次引导
-
-图片生成仅在方案需要且工具可用时使用。Sites/用户自有托管只用于分享链接；邮箱连接不属于第一版依赖。
-先解决阻碍搜索的设置，同时收集区域行业；发件人资料到邮件阶段再问。
-记录检查到的版本至 RUN/work/environment.json，之后只检查相关变化，不反复询问已配置项。
+图片生成、托管和邮箱连接不属于抓取必装依赖。母版已随包提供，发件人到邮件阶段再收集。系统授权/重启和平台审批不能假装自动完成。

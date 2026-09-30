@@ -19,7 +19,7 @@ from email.message import EmailMessage
 from email.policy import SMTP
 from urllib.parse import urlparse, urlunparse
 
-VERSION = "1.0.1"
+VERSION = "1.1.0"
 SKILL = Path(__file__).resolve().parent.parent
 
 
@@ -145,7 +145,17 @@ def doctor(args):
         except (OSError, subprocess.TimeoutExpired):
             checks["docker"]["daemon_ready"] = False
     codex = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex")))
-    candidates = [codex / "skills/google-maps-scraper/SKILL.md", Path.home() / ".agents/skills/google-maps-scraper/SKILL.md"]
+    candidates = [SKILL.parent / "google-maps-scraper/SKILL.md", codex / "skills/google-maps-scraper/SKILL.md", Path.home() / ".agents/skills/google-maps-scraper/SKILL.md"]
+    runtime_profile = codex / "overseas-web-prospecting/runtime.json"
+    checks["runtime_profile"] = {"found": runtime_profile.is_file(), "path": str(runtime_profile)}
+    if runtime_profile.is_file():
+        try:
+            settings = read(runtime_profile)
+            checks["runtime_profile"]["wsl_distro"] = settings.get("wsl_distro")
+            checks["runtime_profile"]["proxy_configured"] = bool(settings.get("proxy_file"))
+            candidates.insert(0, Path(settings["skills_dir"]) / "google-maps-scraper/SKILL.md")
+        except (OSError,ValueError,KeyError,TypeError):
+            checks["runtime_profile"]["invalid"] = True
     if args.scraper_skill:
         candidates.insert(0, Path(args.scraper_skill) / "SKILL.md")
     found = next((p for p in candidates if p.is_file()), None)

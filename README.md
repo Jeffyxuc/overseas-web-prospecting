@@ -1,122 +1,83 @@
 # 海外建站获客助手
 
-一个供 Codex 使用的本地 Skill，将海外商家线索研究、网站诊断、Demo 制作和开发邮件整理为可继续执行的工作流。
+供 **Codex 桌面端**使用的本地 Skill：找海外商家 → 选客户 → 分析官网 → 确认方案 → 搭建 Demo → 生成开发邮件包。无需作者维护服务器，不自动发送邮件。
 
-## 工作流程
+## 新用户：安装并验证环境
 
-1. 用户提供区域和行业。
-2. 使用 Google Maps Scraper 获取线索，初筛并呈现最多五家候选。
-3. 用户选定商家，Codex 深入分析官网，提出 Demo 方案。
-4. 用户确认方案后，制作网站 Demo，检查电脑/手机效果并截图。
-5. 按标准邮件母版生成英文正文、中文对照、附图和邮件草稿。
+先安装并登录 Codex，准备能访问 GitHub、软件源、Docker Hub、Google Maps 的网络。在自己的电脑运行下面一行命令。安装会显示六阶段进度；系统授权、首次账户设置或重启按提示完成后，重跑同一条命令即可。
 
-任务资料保存在用户自己的目录，支持中断后继续。用户选择和方案批准是明确的决策节点。
-本项目不提供公共后台服务，不自动发送邮件。
-
-## 安装并检查环境：推荐新用户使用
-
-命令会显示依赖检查、安装和抓取验证的进度。需要能访问 GitHub、软件源、Docker Hub 和 Google Maps。
-先安装并登录 Codex。以下命令会安装缺失的软件，备份已有同名 Skill 后安装两个 Skill；首次运行可能下载较多内容。
-
-**Windows：在普通 PowerShell 中粘贴这一行。**
+**Windows · 普通 PowerShell**
 
 ```powershell
 $p = Join-Path $env:TEMP 'overseas-web-setup.ps1'; Invoke-WebRequest -UseBasicParsing 'https://raw.githubusercontent.com/Jeffyxuc/overseas-web-prospecting/main/scripts/setup.ps1' -OutFile $p; if ($?) { powershell.exe -NoProfile -ExecutionPolicy Bypass -File $p }
 ```
 
-只对这次安装进程使用执行策略参数，不永久修改系统策略。通过 Windows 自带的 winget 安装缺失的 Python、Git、Node.js、Docker Desktop。
-缺少 winget 时提示安装 [App Installer](https://aka.ms/getwinget)。缺少 WSL/Ubuntu 时，会显示管理员应执行的 `wsl --install -d Ubuntu`；
-完成首次设置、必要的重启后，回到普通 PowerShell 重跑同一条命令。已有 Ubuntu-24.04 等发行版时，可在末尾追加 `-Distro Ubuntu-24.04`。
-脚本在指定 WSL 中补充 Bash、Node、npm、Python、curl 和 Git，随后检查该环境能否连接 Linux Docker 引擎。
+默认使用 WSL 2 + Ubuntu 内的 Docker Engine，按需安装 Windows Python/Node 和 Linux 抓取工具。缺少 Ubuntu 时会明确提示管理员安装命令；不用购买代理服务，也不强制安装 Docker Desktop。加入 Linux Docker 用户组会授予该账户控制 Docker 的权限。
 
-**Mac：在终端中粘贴这一行。**
+已有正常运行的 Docker Desktop，可在命令末尾追加 `-Engine Desktop`，先开启其 Ubuntu WSL 集成；其他 Ubuntu 发行版可追加 `-Distro Ubuntu-24.04`。本入口面向 Ubuntu/Debian。不会重置现有 Docker 数据。
+
+**Mac · 终端**
 
 ```bash
 p=$(mktemp -t overseas-web-setup) && curl -fLSs https://raw.githubusercontent.com/Jeffyxuc/overseas-web-prospecting/main/scripts/setup.sh -o "$p" && /bin/bash "$p"
 ```
 
-缺少 Homebrew 时调用其官方安装器；按需安装 Python、Git、Node.js 和 Docker Desktop。
-系统密码、开发工具下载、Docker 首次提示需要用户按屏幕指引完成。
+按需通过 Homebrew 安装 Python、Git、Node 和 Docker Desktop。按屏幕提示完成系统密码、开发工具和 Docker 首次授权。**Mac 入口已做语法与跨平台逻辑检查，尚未做 Mac 实机验收。**
 
-**显示 `READY` 才表示真实抓取验证通过。** 最后会进行一次悉尼烘焙店的小规模查询，只有容器正常结束，
-且结果中至少一个商家带有地图链接、评分和评论数，才报告抓取可用。这不等于完成评价正文分析。
-系统授权、重启或 Docker 的 WSL 集成设置无法保证一次全自动完成；遇到这些情况，脚本给出下一步，重跑后重新检查并继续。
-Windows 的 Docker 集成入口见 [Docker 官方指引](https://docs.docker.com/desktop/features/wsl/)，WSL 安装见 [微软指引](https://learn.microsoft.com/en-us/windows/wsl/install)。
+安装器自动完成：
 
-现有 Skill 备份、环境报告和测试结果保留在 Windows `%LOCALAPPDATA%/overseas-web-prospecting/setup`，
-或 Mac `~/Library/Caches/overseas-web-prospecting/setup`。验证不会发送邮件或发布网站。
-只想检查环境，可在 Windows 命令末尾加 `-CheckOnly`，Mac 命令末尾加 `--check-only`；这种模式不测试抓取。
-自定义 CODEX_HOME、手动验证和失败恢复见 [安装与环境](references/setup.md)。
+1. 检查依赖和实际运行环境，显示缺少项。
+2. 下载两个 Skill 的原始压缩包，保留 Bash 换行；识别 `.agents/skills`、`.codex/skills` 和自定义 `CODEX_HOME`。
+3. 备份旧副本，合并两个默认目录中的同名安装，避免旧版继续被加载；安装失败恢复原副本。
+4. 保存本机运行配置，复用可用代理环境变量；不把代理内容输出到聊天或发布包。
+5. 执行一次小规模真实地图抓取，保存本地报告和原始结果。
 
-## 仅安装 Skill：Mac / Windows
+**只有显示 `READY`，才表示这次抓取正常结束，且确实取得地图链接、评分和评论数。** 这不表示评价正文已经读取，也不保证以后每一次查询都成功。
 
-先安装 **Node.js 22.20.0 或更高版本（含 npm/npx）**、**Git**，并确保可以使用 Codex。
-Mac 的终端和 Windows 的命令提示符（CMD）使用同一条命令：
+状态和备份保存在 `$CODEX_HOME/overseas-web-prospecting/`，默认是 `~/.codex/overseas-web-prospecting/`。实际技能目录写在其中的 `installation.json`。后续获客直接复用 `runtime.json`，不用每轮重新搭环境。
+
+## 网络配置与失败恢复
+
+默认复用已有本地配置，否则检查当前运行环境的 `HTTPS_PROXY` / `HTTP_PROXY`；没有则直连。不附带作者代理，不推荐或购买第三方服务。
+
+- **已有代理但没有自动识别**：把一条 HTTP/HTTPS 代理 URL 存到本地文本文件。Windows 命令末尾追加 `-ProxyFile "文件绝对路径"`；Mac 追加 `--proxy-file "文件绝对路径"`。不要把账号密码粘贴到聊天。
+- **希望直连抓取**：Windows 追加 `-Network direct`；Mac 追加 `--direct`。Docker 镜像下载仍使用 Docker 自己的网络设置。
+- **只检查现有安装**：Windows 追加 `-CheckOnly`；Mac 追加 `--check-only`。不安装或更新软件、不发起抓取，保存依赖检查报告；WSL 模式可能启动已有 Docker 服务。
+- **安装中断**：处理终端指出的问题，再运行同一条安装命令。旧 Skill 的备份保留。
+- **下载镜像失败**：Docker 守护进程的代理和浏览器抓取代理是不同设置；Windows 独立引擎可自动配置，Mac/Desktop 按提示在 Docker 中配置。
+
+代理只能在用户已有的网络能力范围内使用；WSL 必须能连接代理端口。完整恢复步骤见 [安装与环境](references/setup.md)。
+
+## 安装后开始
+
+刷新 Codex 技能或新开聊天，输入：
+
+> 使用 $overseas-web-prospecting，帮我寻找英国曼彻斯特适合提供建站服务的烘焙店。
+
+接下来只需选择客户、确认 Demo 方案，并在邮件阶段提供自己的发件人资料。候选卡片默认展示评分和评论数；没有拿到时必须报告原因并尝试补查，不能悄悄跳过地图研究。
+
+默认交付本地 Demo、真实截图和英文邮件/中文对照。有公开收件邮箱和已验证分享链接时生成 EML 草稿；缺少时标记待补充。公开分享使用你自己的托管能力。邮件不会自动发送。
+
+详见 [使用说明](使用说明.md)、[执行规则](SKILL.md) 和 [验证说明](验证说明.md)。
+
+## 仅安装 Skill 文件（已有环境的用户）
+
+可使用 Vercel Skills CLI。它可能安装到 `~/.agents/skills`，不能根据旧教程假定是 `.codex/skills`：
 
 ```sh
 npx -y skills@1.7.0 add Jeffyxuc/overseas-web-prospecting -a codex -g --copy -y
 ```
 
-Windows PowerShell 如果提示禁止运行 `npx.ps1`，使用下面这条等效命令，无需修改系统执行策略：
+PowerShell 可用 `npx.cmd` 替代 `npx`。这条命令只装本 Skill，不配置抓取环境；新用户请用上面的完整安装入口。也可下载完整仓库，用 `python scripts/install.py` 进行拒绝覆盖的手动安装。
 
-```powershell
-npx.cmd -y skills@1.7.0 add Jeffyxuc/overseas-web-prospecting -a codex -g --copy -y
-```
+## 开发与验证
 
-命令固定安装工具版本，自动下载本仓库的 Skill，安装到 Codex 用户级目录。
-`--copy` 使用文件复制，避免 Windows 创建符号链接的权限要求；`-y` 跳过安装选择提示。
-这里使用 [Vercel Skills CLI](https://github.com/vercel-labs/skills#install-a-skill) 的标准安装流程，
-工具版本固定为 1.7.0，技能内容从本仓库当前默认分支获取。
-重复运行可能更新或覆盖同名安装副本；有自行修改时请先保留副本。
-
-**这条命令安装的是获客 Skill，不会自动安装 Docker、Python、WSL 等系统运行环境，也不会替你登录服务。**
-Google Maps Scraper 是独立依赖，首次使用时由本 Skill 检查并引导安装、配置。
-Mac / Windows 使用相同的 Skill 文件；本次已实测 Windows 项目级隔离安装，Mac 未在实机上验证。
-
-## 安装后开始
-
-重新加载 Codex 技能或新开聊天，输入：
-
-> 使用 $overseas-web-prospecting，帮我寻找英国曼彻斯特适合提供建站服务的烘焙店。
-
-也可以只说“使用海外建站获客助手”，让 Codex 引导你填写区域与行业。
-完整使用步骤见 [使用说明](使用说明.md)，执行规则见 [SKILL.md](SKILL.md)。
-
-不使用 npx 时，可下载仓库后使用包内 `scripts/install.py` 安装；该备用安装器拒绝覆盖已有同名目录。
-
-## 环境依赖
-
-- Codex 桌面端及可用的浏览器/文件/执行能力。
-- Python 3.10+；核心记录与邮件脚本仅使用标准库。
-- 独立安装的 [Google Maps Scraper](https://github.com/gosom/google-maps-scraper) Skill，以及其 Docker、Node.js 和对应 Windows WSL 运行环境。
-- 可访问 Google Maps 与目标商家网站的网络。
-- 公开分享 Demo 时使用用户自己的可用托管能力；本地预览不依赖公开托管。
-
-本仓库未复制上游抓取项目源码，其实际运行指引以已安装上游版本为准。
-
-## 内容
-
-| 目录或文件 | 用途 |
-| --- | --- |
-| `SKILL.md` | 主流程与阶段切换 |
-| `agents/` | Codex 显示信息 |
-| `references/` | 筛选、分析、搭建、邮件、恢复及数据契约 |
-| `scripts/` | 环境检查、进度管理、截图、邮件打包与安装 |
-| `assets/` | 邮件母版与产品预订/服务预约/询价三类网站起点 |
-| `package-manifest.json` | 1.0.1 Skill 文件摘要 |
-
-不把客户资料、发件人资料、代理配置或本地任务成果提交到此仓库。
-
-## 验证
+当前版本 **1.1.0**。主流程在 `SKILL.md`，规则在 `references/`，工具在 `scripts/`，邮件母版和 Demo 起点在 `assets/`；`package-manifest.json` 保存发行文件摘要。
 
 ```sh
-python scripts/test_workflow.py
-python scripts/test_environment.py
+python -m unittest discover -s scripts -p 'test_*.py'
 ```
 
-核心流程原有 19 项本地行为测试、三类模板 9 组浏览器场景已验证；新增环境检查器有独立的离线行为测试。
-真实 Google Maps 抓取、公共部署、邮箱发送和全新用户配置未在本版完成验证。
-示例测试使用明确的虚构数据，不能作为真实客户研究结果。详见 [验证说明](验证说明.md)。
+本版已在 Windows + Ubuntu WSL 的现有环境完成真实抓取验收：16 家商家全部带评分和评论数。离线测试覆盖安装备份/回滚、异常压缩包、代理设置、WSL 保活、空结果和失败抓取等。尚未验证全新电脑从零安装、Mac 实机、公开部署及邮件送达。
 
-没有找到公开邮箱或没有验证过的外部分享链接时，仅生成待补充材料。
-邮件草稿不等于已发送，也不保证送达或成交。
+本仓库通过 Docker 调用 [Google Maps Scraper](https://github.com/gosom/google-maps-scraper)，没有复制抓取源码。个人代理、发件人和客户资料留在本机，不进入仓库。
